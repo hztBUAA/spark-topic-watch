@@ -1,13 +1,52 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, TrendingUp, MessageSquare, Hash, BarChart3 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Search, TrendingUp, MessageSquare, Hash, BarChart3, RefreshCw, Settings } from "lucide-react";
 import { TrendChart } from "./TrendChart";
 import { HotPostsList } from "./HotPostsList";
 import { WordCloudComponent } from "./WordCloudComponent";
 import { StatCard } from "./StatCard";
+import { useDataContext } from "@/contexts/DataContext";
+import { toast } from "sonner";
 
 export const Dashboard = () => {
+  const { 
+    stats, 
+    loading, 
+    useMockData, 
+    setUseMockData, 
+    refreshData, 
+    startMonitoring,
+    searchKeywords
+  } = useDataContext();
+  
+  const [searchKeyword, setSearchKeyword] = useState("");
+
+  const handleSearch = async () => {
+    if (!searchKeyword.trim()) {
+      toast.error("请输入关键词");
+      return;
+    }
+    
+    const keywords = searchKeyword.split(',').map(k => k.trim()).filter(k => k);
+    await startMonitoring(keywords);
+    setSearchKeyword("");
+  };
+
+  const handleManualSearch = async () => {
+    if (!searchKeyword.trim()) {
+      toast.error("请输入关键词");
+      return;
+    }
+    
+    const keywords = searchKeyword.split(',').map(k => k.trim()).filter(k => k);
+    await searchKeywords(keywords);
+    setSearchKeyword("");
+  };
+
   return (
     <div className="min-h-screen bg-background p-6">
       {/* Header */}
@@ -22,15 +61,54 @@ export const Dashboard = () => {
             </p>
           </div>
           <div className="flex items-center gap-4">
+            {/* Mock/Real Data Toggle */}
+            <div className="flex items-center gap-2 bg-card/50 backdrop-blur-sm border border-border/50 rounded-lg px-3 py-2">
+              <Settings className="w-4 h-4 text-muted-foreground" />
+              <Label htmlFor="mock-mode" className="text-sm">演示模式</Label>
+              <Switch
+                id="mock-mode"
+                checked={useMockData}
+                onCheckedChange={setUseMockData}
+              />
+            </div>
+            
+            <Button
+              onClick={refreshData}
+              disabled={loading}
+              variant="outline"
+              size="sm"
+              className="bg-card/50 backdrop-blur-sm border-border/50"
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+              刷新
+            </Button>
+            
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <Input 
-                placeholder="输入关键词开始监测..." 
+                placeholder="输入关键词，用逗号分隔..." 
+                value={searchKeyword}
+                onChange={(e) => setSearchKeyword(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                 className="pl-10 w-80 bg-card/50 backdrop-blur-sm border-border/50"
               />
             </div>
-            <Button className="bg-gradient-primary hover:opacity-90 transition-opacity">
+            
+            <Button 
+              onClick={handleSearch}
+              disabled={loading}
+              className="bg-gradient-primary hover:opacity-90 transition-opacity"
+            >
               开始监测
+            </Button>
+            
+            <Button 
+              onClick={handleManualSearch}
+              disabled={loading}
+              variant="outline"
+              className="bg-card/50 backdrop-blur-sm border-border/50"
+            >
+              立即搜索
             </Button>
           </div>
         </div>
@@ -39,29 +117,31 @@ export const Dashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <StatCard
             title="今日监测关键词"
-            value="127"
-            change="+12%"
+            value={stats.total_keywords.toString()}
+            change={`+${stats.keyword_growth}%`}
             icon={Hash}
             trend="up"
           />
           <StatCard
             title="热帖数量"
-            value="2,847"
-            change="+23%"
+            value={stats.total_posts.toLocaleString()}
+            change={`+${stats.posts_growth}%`}
             icon={TrendingUp}
             trend="up"
           />
           <StatCard
             title="总互动量"
-            value="1.2M"
-            change="+8%"
+            value={stats.total_interactions > 1000000 
+              ? `${(stats.total_interactions / 1000000).toFixed(1)}M` 
+              : stats.total_interactions.toLocaleString()}
+            change={`+${stats.interactions_growth}%`}
             icon={MessageSquare}
             trend="up"
           />
           <StatCard
             title="情绪指数"
-            value="72%"
-            change="+5%"
+            value={`${stats.sentiment_score}%`}
+            change={`+${stats.sentiment_growth}%`}
             icon={BarChart3}
             trend="up"
           />

@@ -1,52 +1,18 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Heart, MessageCircle, Clock } from "lucide-react";
-
-const hotPosts = [
-  {
-    id: 1,
-    title: "2024年最新医美项目推荐！这些项目真的太绝了",
-    likes: 12800,
-    comments: 892,
-    time: "2小时前",
-    score: 9564,
-    tag: "医美"
-  },
-  {
-    id: 2,
-    title: "亲测有效的护肤步骤，皮肤状态肉眼可见的变好",
-    likes: 8900,
-    comments: 567,
-    score: 6400,
-    tag: "护肤"
-  },
-  {
-    id: 3,
-    title: "医美避雷指南！这些坑千万不要踩",
-    likes: 7200,
-    comments: 1205,
-    score: 5400,
-    tag: "医美"
-  },
-  {
-    id: 4,
-    title: "学生党也能做的平价医美项目分享",
-    likes: 6500,
-    comments: 423,
-    score: 4678,
-    tag: "医美"
-  },
-  {
-    id: 5,
-    title: "医美后护理全攻略，照着做恢复更快",
-    likes: 5800,
-    comments: 298,
-    score: 4149,
-    tag: "医美"
-  }
-];
+import { Heart, MessageCircle, Clock, ExternalLink } from "lucide-react";
+import { useDataContext } from "@/contexts/DataContext";
 
 export const HotPostsList = () => {
+  const { hotPosts } = useDataContext();
+  
+  if (!hotPosts.length) {
+    return (
+      <div className="text-center text-muted-foreground py-8">
+        暂无热帖数据
+      </div>
+    );
+  }
   return (
     <div className="space-y-4">
       <Table>
@@ -62,7 +28,7 @@ export const HotPostsList = () => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {hotPosts.map((post, index) => (
+          {hotPosts.slice(0, 10).map((post, index) => (
             <TableRow key={post.id} className="hover:bg-muted/50 transition-colors">
               <TableCell>
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
@@ -83,28 +49,40 @@ export const HotPostsList = () => {
               </TableCell>
               <TableCell>
                 <Badge variant="secondary" className="bg-primary/10 text-primary">
-                  {post.tag}
+                  {post.keyword}
                 </Badge>
               </TableCell>
               <TableCell>
                 <div className="flex items-center gap-1 text-pink-400">
                   <Heart className="w-4 h-4" />
-                  <span className="font-medium">{post.likes.toLocaleString()}</span>
+                  <span className="font-medium">{post.likes_count.toLocaleString()}</span>
                 </div>
               </TableCell>
               <TableCell>
                 <div className="flex items-center gap-1 text-blue-400">
                   <MessageCircle className="w-4 h-4" />
-                  <span className="font-medium">{post.comments.toLocaleString()}</span>
+                  <span className="font-medium">{post.comments_count.toLocaleString()}</span>
                 </div>
               </TableCell>
               <TableCell>
-                <span className="font-bold text-primary">{post.score.toLocaleString()}</span>
+                <span className="font-bold text-primary">{Math.round(post.hot_score).toLocaleString()}</span>
               </TableCell>
               <TableCell>
-                <div className="flex items-center gap-1 text-muted-foreground">
-                  <Clock className="w-4 h-4" />
-                  <span className="text-sm">{post.time}</span>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 text-muted-foreground">
+                    <Clock className="w-4 h-4" />
+                    <span className="text-sm">
+                      {new Date(post.publish_time).toLocaleDateString('zh-CN')}
+                    </span>
+                  </div>
+                  <a 
+                    href={post.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
                 </div>
               </TableCell>
             </TableRow>

@@ -1,25 +1,35 @@
-import { useEffect, useRef } from 'react';
-
-const words = [
-  { text: '医美', size: 40, color: 'hsl(var(--primary))' },
-  { text: '护肤', size: 35, color: 'hsl(var(--accent))' },
-  { text: '美白', size: 30, color: 'hsl(var(--chart-3))' },
-  { text: '抗衰', size: 28, color: 'hsl(var(--chart-4))' },
-  { text: '玻尿酸', size: 25, color: 'hsl(var(--primary))' },
-  { text: '肉毒素', size: 23, color: 'hsl(var(--accent))' },
-  { text: '热玛吉', size: 22, color: 'hsl(var(--chart-5))' },
-  { text: '水光针', size: 20, color: 'hsl(var(--chart-3))' },
-  { text: '线雕', size: 18, color: 'hsl(var(--primary))' },
-  { text: '激光', size: 17, color: 'hsl(var(--accent))' },
-  { text: '面膜', size: 16, color: 'hsl(var(--chart-4))' },
-  { text: '精华', size: 15, color: 'hsl(var(--chart-5))' },
-  { text: '洁面', size: 14, color: 'hsl(var(--chart-3))' },
-  { text: '防晒', size: 13, color: 'hsl(var(--primary))' },
-  { text: '眼霜', size: 12, color: 'hsl(var(--accent))' },
-];
+import { useEffect, useRef, useMemo } from 'react';
+import { useDataContext } from '@/contexts/DataContext';
 
 export const WordCloudComponent = () => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const { wordCloud } = useDataContext();
+  
+  const words = useMemo(() => {
+    if (!wordCloud.length) return [];
+    
+    const colors = [
+      'hsl(var(--primary))',
+      'hsl(var(--accent))',
+      'hsl(var(--chart-3))',
+      'hsl(var(--chart-4))',
+      'hsl(var(--chart-5))',
+    ];
+    
+    return wordCloud.map((item, index) => ({
+      text: item.keyword,
+      size: Math.max(12, Math.min(40, item.weight * 0.4 + 12)),
+      color: colors[index % colors.length]
+    }));
+  }, [wordCloud]);
+  
+  if (!words.length) {
+    return (
+      <div className="h-full flex items-center justify-center text-muted-foreground">
+        暂无词云数据
+      </div>
+    );
+  }
 
   const getRandomPosition = () => ({
     x: Math.random() * 80 + 10,

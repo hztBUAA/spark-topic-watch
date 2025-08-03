@@ -1,46 +1,70 @@
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-
-const data = [
-  { date: '1/1', value: 1200, keyword: '医美' },
-  { date: '1/2', value: 1890, keyword: '医美' },
-  { date: '1/3', value: 2100, keyword: '医美' },
-  { date: '1/4', value: 1800, keyword: '医美' },
-  { date: '1/5', value: 2400, keyword: '医美' },
-  { date: '1/6', value: 2100, keyword: '医美' },
-  { date: '1/7', value: 2800, keyword: '医美' },
-];
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useDataContext } from '@/contexts/DataContext';
+import { useMemo } from 'react';
 
 export const TrendChart = () => {
+  const { trends } = useDataContext();
+  
+  // Transform trends data for chart
+  const chartData = useMemo(() => {
+    if (!trends.length) return [];
+    
+    // Group by date
+    const grouped = trends.reduce((acc, trend) => {
+      const date = new Date(trend.date).toLocaleDateString('zh-CN', { 
+        month: 'short', 
+        day: 'numeric' 
+      });
+      
+      if (!acc[date]) {
+        acc[date] = { name: date };
+      }
+      
+      acc[date][trend.keyword] = trend.count;
+      return acc;
+    }, {} as Record<string, any>);
+    
+    return Object.values(grouped);
+  }, [trends]);
+  
+  // Get unique keywords for lines
+  const keywords = useMemo(() => {
+    return Array.from(new Set(trends.map(t => t.keyword)));
+  }, [trends]);
+  
+  const colors = ['hsl(var(--primary))', 'hsl(var(--accent))', 'hsl(var(--secondary))', '#8884d8', '#82ca9d'];
+  
+  if (!chartData.length) {
+    return (
+      <div className="h-80 flex items-center justify-center text-muted-foreground">
+        暂无趋势数据
+      </div>
+    );
+  }
   return (
     <div className="h-80 w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data}>
+        <LineChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-          <XAxis 
-            dataKey="date" 
-            stroke="hsl(var(--muted-foreground))"
-            fontSize={12}
-          />
-          <YAxis 
-            stroke="hsl(var(--muted-foreground))"
-            fontSize={12}
-          />
+          <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" />
+          <YAxis stroke="hsl(var(--muted-foreground))" />
           <Tooltip 
             contentStyle={{
-              backgroundColor: 'hsl(var(--card))',
+              backgroundColor: 'hsl(var(--popover))',
               border: '1px solid hsl(var(--border))',
               borderRadius: '8px',
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
             }}
           />
-          <Line 
-            type="monotone" 
-            dataKey="value" 
-            stroke="hsl(var(--primary))" 
-            strokeWidth={3}
-            dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
-            activeDot={{ r: 6, stroke: 'hsl(var(--primary))', strokeWidth: 2 }}
-          />
+          <Legend />
+          {keywords.map((keyword, index) => (
+            <Line 
+              key={keyword}
+              type="monotone" 
+              dataKey={keyword} 
+              stroke={colors[index % colors.length]} 
+              strokeWidth={3} 
+            />
+          ))}
         </LineChart>
       </ResponsiveContainer>
     </div>
