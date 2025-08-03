@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  # FastAPI应用
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://xiaohongshu:password123@db:5432/xiaohongshu_monitor
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - ./browser_data:/app/browser_data
+      - ./data:/app/data
+      - ./logs:/app/logs
+    restart: unless-stopped
+
+  # PostgreSQL数据库
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=xiaohongshu_monitor
+      - POSTGRES_USER=xiaohongshu
+      - POSTGRES_PASSWORD=password123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+
+  # Redis缓存
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  # Celery Worker (可选)
+  worker:
+    build: .
+    command: celery -A tasks.celery worker --loglevel=info
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://xiaohongshu:password123@db:5432/xiaohongshu_monitor
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - ./browser_data:/app/browser_data
+      - ./data:/app/data
+      - ./logs:/app/logs
+    restart: unless-stopped
+
+  # Celery Beat (可选)
+  beat:
+    build: .
+    command: celery -A tasks.celery beat --loglevel=info
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://xiaohongshu:password123@db:5432/xiaohongshu_monitor
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
